@@ -1,7 +1,6 @@
 use std::fs;
 
 const BOARD_SIZE: usize = 5;
-const CALLED: i32 = -1;
 
 pub fn run() {
     let content = fs::read_to_string("input/day4").expect("Unable to read input");
@@ -12,7 +11,7 @@ pub fn run() {
     println!("  Problem 2: {}", problem2(calls, boards));
 }
 
-fn parse_lines(raw: &str) -> (Vec<i32>, Vec<Board>) {
+fn parse_lines(raw: &str) -> (Vec<u8>, Vec<Board>) {
     let mut lines = raw.lines();
     let calls = lines
         .next()
@@ -23,14 +22,14 @@ fn parse_lines(raw: &str) -> (Vec<i32>, Vec<Board>) {
 
     let mut boards = Vec::new();
     while lines.next().is_some() {
-        let mut rows = [[CALLED; BOARD_SIZE]; BOARD_SIZE];
-        let mut cols = [[CALLED; BOARD_SIZE]; BOARD_SIZE];
+        let mut rows = [[Value::Called; BOARD_SIZE]; BOARD_SIZE];
+        let mut cols = [[Value::Called; BOARD_SIZE]; BOARD_SIZE];
         for r in 0..BOARD_SIZE {
             let line = lines.next().expect("Incomplete board");
             for (c, cell) in line.split_ascii_whitespace().enumerate() {
                 let parsed = cell.parse().unwrap();
-                rows[r][c] = parsed;
-                cols[c][r] = parsed;
+                rows[r][c] = Value::Uncalled(parsed);
+                cols[c][r] = Value::Uncalled(parsed);
             }
         }
         boards.push(Board { rows, cols });
@@ -41,17 +40,36 @@ fn parse_lines(raw: &str) -> (Vec<i32>, Vec<Board>) {
 
 #[derive(Clone)]
 struct Board {
-    pub rows: [[i32; BOARD_SIZE]; BOARD_SIZE],
-    pub cols: [[i32; BOARD_SIZE]; BOARD_SIZE],
+    pub rows: [[Value; BOARD_SIZE]; BOARD_SIZE],
+    pub cols: [[Value; BOARD_SIZE]; BOARD_SIZE],
 }
 
-fn problem1(calls: Vec<i32>, mut boards: Vec<Board>) -> i32 {
+#[derive(Copy, Clone, Eq, PartialEq)]
+enum Value {
+    Uncalled(u8),
+    Called,
+}
+
+impl Value {
+    fn content(&self) -> Option<u8> {
+        match &self {
+            Self::Uncalled(n) => Some(*n),
+            Self::Called => None,
+        }
+    }
+
+    fn is_called(&self) -> bool {
+        self == &Self::Called
+    }
+}
+
+fn problem1(calls: Vec<u8>, mut boards: Vec<Board>) -> u32 {
     let (board_indices, last_call) = play_bingo(&mut calls.iter(), &mut boards);
     let uncalled_sum = sum_uncalled(&boards[board_indices[0]]);
-    uncalled_sum * last_call
+    uncalled_sum * (last_call as u32)
 }
 
-fn problem2(calls: Vec<i32>, mut boards: Vec<Board>) -> i32 {
+fn problem2(calls: Vec<u8>, mut boards: Vec<Board>) -> u32 {
     let mut call_iter = calls.iter();
 
     loop {
@@ -59,7 +77,7 @@ fn problem2(calls: Vec<i32>, mut boards: Vec<Board>) -> i32 {
 
         if boards.len() == 1 {
             let uncalled_sum = sum_uncalled(&boards[0]);
-            return uncalled_sum * last_call;
+            return uncalled_sum * (last_call as u32);
         }
 
         for (offset, index) in board_indices.into_iter().enumerate() {
@@ -70,9 +88,9 @@ fn problem2(calls: Vec<i32>, mut boards: Vec<Board>) -> i32 {
     }
 }
 
-fn play_bingo<'a, C>(calls: &mut C, boards: &mut [Board]) -> (Vec<usize>, i32)
+fn play_bingo<'a, C>(calls: &mut C, boards: &mut [Board]) -> (Vec<usize>, u8)
 where
-    C: Iterator<Item = &'a i32>,
+    C: Iterator<Item = &'a u8>,
 {
     let mut winners = Vec::new();
     while let Some(call) = calls.next() {
@@ -93,12 +111,12 @@ where
     unreachable!()
 }
 
-fn apply_call(groups: &mut [[i32; BOARD_SIZE]], called_value: i32) -> bool {
+fn apply_call(groups: &mut [[Value; BOARD_SIZE]], called_value: u8) -> bool {
     let mut modified_index = None;
     'outer: for (i, group) in groups.iter_mut().enumerate() {
         for value in group.iter_mut() {
-            if *value == called_value {
-                *value = CALLED;
+            if *value == Value::Uncalled(called_value) {
+                *value = Value::Called;
                 modified_index = Some(i);
                 break 'outer;
             }
@@ -106,19 +124,20 @@ fn apply_call(groups: &mut [[i32; BOARD_SIZE]], called_value: i32) -> bool {
     }
 
     if let Some(i) = modified_index {
-        return groups[i].iter().all(|n| n == &CALLED);
+        return groups[i].iter().all(|n| n.is_called());
     }
 
     false
 }
 
-fn sum_uncalled(board: &Board) -> i32 {
+fn sum_uncalled(board: &Board) -> u32 {
     board
         .rows
         .into_iter()
         .map(|row| row.into_iter())
         .flatten()
-        .filter(|c| c != &CALLED)
+        .filter_map(|c| c.content())
+        .map(|c| c as u32)
         .sum()
 }
 
