@@ -11,6 +11,7 @@ pub fn run() {
     println!("  Problem 2: {}", problem2(calls, boards));
 }
 
+#[allow(clippy::needless_range_loop)]
 fn parse_lines(raw: &str) -> (Vec<u8>, Vec<Board>) {
     let mut lines = raw.lines();
     let calls = lines
@@ -22,8 +23,8 @@ fn parse_lines(raw: &str) -> (Vec<u8>, Vec<Board>) {
 
     let mut boards = Vec::new();
     while lines.next().is_some() {
-        let mut rows = [[Value::Called; BOARD_SIZE]; BOARD_SIZE];
-        let mut cols = [[Value::Called; BOARD_SIZE]; BOARD_SIZE];
+        let mut rows = [[Value::Uninitialized; BOARD_SIZE]; BOARD_SIZE];
+        let mut cols = [[Value::Uninitialized; BOARD_SIZE]; BOARD_SIZE];
         for r in 0..BOARD_SIZE {
             let line = lines.next().expect("Incomplete board");
             for (c, cell) in line.split_ascii_whitespace().enumerate() {
@@ -32,7 +33,12 @@ fn parse_lines(raw: &str) -> (Vec<u8>, Vec<Board>) {
                 cols[c][r] = Value::Uncalled(parsed);
             }
         }
-        boards.push(Board { rows, cols });
+        let b = Board { rows, cols };
+        if b.is_initialized() {
+            boards.push(b);
+        } else {
+            panic!("Unitialized board");
+        }
     }
 
     (calls, boards)
@@ -44,8 +50,15 @@ struct Board {
     pub cols: [[Value; BOARD_SIZE]; BOARD_SIZE],
 }
 
+impl Board {
+    fn is_initialized(&self) -> bool {
+        !self.rows.iter().flatten().any(|&v| v == Value::Uninitialized)
+    }
+}
+
 #[derive(Copy, Clone, Eq, PartialEq)]
 enum Value {
+    Uninitialized,
     Uncalled(u8),
     Called,
 }
@@ -55,6 +68,7 @@ impl Value {
         match &self {
             Self::Uncalled(n) => Some(*n),
             Self::Called => None,
+            Self::Uninitialized => panic!(),
         }
     }
 
@@ -93,7 +107,7 @@ where
     C: Iterator<Item = &'a u8>,
 {
     let mut winners = Vec::new();
-    while let Some(call) = calls.next() {
+    for call in calls {
         for (b, board) in boards.iter_mut().enumerate() {
             let did_row_win = apply_call(&mut board.rows, *call);
             let did_col_win = apply_call(&mut board.cols, *call);

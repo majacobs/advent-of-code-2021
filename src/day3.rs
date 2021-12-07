@@ -14,7 +14,7 @@ fn parse_lines(raw: &str) -> Vec<u32> {
         .lines()
         .map(|l| u32::from_str_radix(l, 2).unwrap())
         .collect();
-    data.sort();
+    data.sort_unstable();
     data
 }
 
@@ -30,15 +30,15 @@ fn most_common_bits<const N: usize>(data: &[u32]) -> u32 {
     // index 0 = least significant bit
     let mut bit_counts = vec![0; N];
     for n in data {
-        for i in 0..N {
-            bit_counts[i] += (n >> i) & 1;
+        for (i, count) in bit_counts.iter_mut().enumerate() {
+            *count += (n >> i) & 1;
         }
     }
 
     let half = (data.len() / 2) as u32;
     let mut most_common = 0;
-    for i in 0..N {
-        most_common |= ((bit_counts[i] >= half) as u32) << i;
+    for (i, count) in bit_counts.into_iter().enumerate() {
+        most_common |= ((count >= half) as u32) << i;
     }
     most_common
 }

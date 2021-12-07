@@ -63,7 +63,7 @@ struct Point {
 impl FromStr for Point {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, ()> {
-        let mut parts = s.split(",");
+        let mut parts = s.split(',');
         Ok(Self {
             x: parts.next().ok_or(())?.parse().map_err(|_| ())?,
             y: parts.next().ok_or(())?.parse().map_err(|_| ())?,

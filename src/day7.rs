@@ -1,5 +1,4 @@
 use std::fs;
-use std::mem;
 
 pub fn run() {
     let content = fs::read_to_string("input/day7").expect("Unable to read input");
