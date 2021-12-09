@@ -52,7 +52,11 @@ struct Board {
 
 impl Board {
     fn is_initialized(&self) -> bool {
-        !self.rows.iter().flatten().any(|&v| v == Value::Uninitialized)
+        !self
+            .rows
+            .iter()
+            .flatten()
+            .any(|&v| v == Value::Uninitialized)
     }
 }
 
