@@ -13,7 +13,11 @@ fn parse_lines(raw: &str) -> Vec<Entry> {
     let mut parsed = Vec::new();
     for line in raw.lines() {
         let mut parts = line.split(' ');
-        let patterns = parts.by_ref().take_while(|s| *s != "|").map(to_bits).collect();
+        let patterns = parts
+            .by_ref()
+            .take_while(|s| *s != "|")
+            .map(to_bits)
+            .collect();
         let outputs = parts.map(to_bits).collect();
         parsed.push(Entry { patterns, outputs });
     }
