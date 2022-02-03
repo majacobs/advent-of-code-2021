@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 mod day01;
 mod day02;
 mod day03;
@@ -15,6 +17,10 @@ mod day14;
 mod day15;
 mod day16;
 mod day17;
+mod day20;
+mod day21;
+mod day22;
+mod day25;
 
 fn main() {
     day01::run();
@@ -34,4 +40,8 @@ fn main() {
     day15::run();
     day16::run();
     day17::run();
+    day20::run();
+    day21::run();
+    day22::run();
+    day25::run();
 }
